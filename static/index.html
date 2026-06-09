@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incident Manager</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Incident Manager</h1>
+    <nav>
+      <button class="nav-btn active" data-section="incidents">Incidents</button>
+      <button class="nav-btn" data-section="services">Services</button>
+      <button class="nav-btn" data-section="oncall">On-Call</button>
+      <button class="nav-btn" data-section="postmortems">Post-Mortems</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- INCIDENTS -->
+    <section id="incidents" class="section active">
+      <div class="section-header">
+        <h2>Incidents</h2>
+        <button class="btn btn-danger" onclick="showModal('new-incident-modal')">New Incident</button>
+      </div>
+      <div class="filters">
+        <button class="filter-btn active" data-status="">All</button>
+        <button class="filter-btn" data-status="open">Open</button>
+        <button class="filter-btn" data-status="investigating">Investigating</button>
+        <button class="filter-btn" data-status="mitigated">Mitigated</button>
+        <button class="filter-btn" data-status="resolved">Resolved</button>
+      </div>
+      <div id="incidents-list" class="card-list"></div>
+    </section>
+
+    <!-- INCIDENT DETAIL -->
+    <section id="incident-detail" class="section">
+      <button class="btn btn-back" onclick="showSection('incidents')">&larr; Back to incidents</button>
+      <div id="incident-detail-content"></div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="section">
+      <div class="section-header">
+        <h2>Services</h2>
+        <button class="btn btn-primary" onclick="showModal('new-service-modal')">New Service</button>
+      </div>
+      <div id="services-list" class="card-list"></div>
+    </section>
+
+    <!-- ON-CALL -->
+    <section id="oncall" class="section">
+      <div class="section-header">
+        <h2>On-Call Schedules</h2>
+        <button class="btn btn-primary" onclick="showModal('new-oncall-modal')">New Schedule</button>
+      </div>
+      <div id="oncall-list" class="card-list"></div>
+    </section>
+
+    <!-- POST-MORTEMS -->
+    <section id="postmortems" class="section">
+      <div class="section-header">
+        <h2>Post-Mortems</h2>
+      </div>
+      <div id="postmortems-list" class="card-list"></div>
+    </section>
+  </main>
+
+  <!-- MODALS -->
+  <div id="new-incident-modal" class="modal">
+    <div class="modal-content">
+      <h3>New Incident</h3>
+      <form id="new-incident-form" onsubmit="createIncident(event)">
+        <label>Service
+          <select name="service_id" required id="incident-service-select"></select>
+        </label>
+        <label>Title
+          <input type="text" name="title" required placeholder="High error rate on...">
+        </label>
+        <label>Severity
+          <select name="severity" required>
+            <option value="1">SEV1 - Critical</option>
+            <option value="2" selected>SEV2 - Major</option>
+            <option value="3">SEV3 - Minor</option>
+            <option value="4">SEV4 - Low</option>
+          </select>
+        </label>
+        <label>Reported by
+          <input type="text" name="created_by" value="operator" required>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="hideModals()">Cancel</button>
+          <button type="submit" class="btn btn-danger">Create Incident</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="new-service-modal" class="modal">
+    <div class="modal-content">
+      <h3>New Service</h3>
+      <form id="new-service-form" onsubmit="createService(event)">
+        <label>Name
+          <input type="text" name="name" required placeholder="payments-api">
+        </label>
+        <label>Team
+          <input type="text" name="team" required placeholder="payments">
+        </label>
+        <label>SLO Target (%)
+          <input type="number" name="slo_target" step="0.01" value="99.9" required>
+        </label>
+        <label>SLI Type
+          <select name="sli_type">
+            <option value="availability">Availability</option>
+            <option value="latency">Latency</option>
+            <option value="throughput">Throughput</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="hideModals()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Service</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="new-oncall-modal" class="modal">
+    <div class="modal-content">
+      <h3>New On-Call Schedule</h3>
+      <form id="new-oncall-form" onsubmit="createOncall(event)">
+        <label>Service
+          <select name="service_id" required id="oncall-service-select"></select>
+        </label>
+        <label>Person
+          <input type="text" name="person" required placeholder="Ana García">
+        </label>
+        <label>Email
+          <input type="email" name="email" required placeholder="ana@example.com">
+        </label>
+        <label>Start Date
+          <input type="date" name="start_date" required>
+        </label>
+        <label>End Date
+          <input type="date" name="end_date" required>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="hideModals()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Schedule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="new-postmortem-modal" class="modal">
+    <div class="modal-content modal-wide">
+      <h3>Write Post-Mortem</h3>
+      <form id="new-postmortem-form" onsubmit="createPostmortem(event)">
+        <input type="hidden" name="incident_id" id="pm-incident-id">
+        <label>Summary
+          <textarea name="summary" required rows="2" placeholder="Brief description of what happened..."></textarea>
+        </label>
+        <label>Root Cause
+          <textarea name="root_cause" required rows="3" placeholder="What was the underlying cause?"></textarea>
+        </label>
+        <label>Impact
+          <textarea name="impact" required rows="2" placeholder="Users affected, SLO impact, duration..."></textarea>
+        </label>
+        <label>Action Items
+          <textarea name="action_items" required rows="3" placeholder="1. Fix X&#10;2. Add monitoring for Y&#10;3. Review Z"></textarea>
+        </label>
+        <label>Lessons Learned
+          <textarea name="lessons" rows="2" placeholder="What did we learn?"></textarea>
+        </label>
+        <label>Author
+          <input type="text" name="author" required placeholder="Ana García">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="hideModals()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Publish Post-Mortem</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="update-incident-modal" class="modal">
+    <div class="modal-content">
+      <h3>Update Incident</h3>
+      <form id="update-incident-form" onsubmit="updateIncident(event)">
+        <input type="hidden" name="incident_id" id="update-incident-id">
+        <label>Status
+          <select name="status" id="update-status-select">
+            <option value="">-- don't change --</option>
+            <option value="investigating">Investigating</option>
+            <option value="mitigated">Mitigated</option>
+            <option value="resolved">Resolved</option>
+          </select>
+        </label>
+        <label>Message
+          <textarea name="message" rows="3" placeholder="What's happening now?"></textarea>
+        </label>
+        <label>Author
+          <input type="text" name="author" required placeholder="Your name">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="hideModals()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

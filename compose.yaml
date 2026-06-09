@@ -1,0 +1,57 @@
+# ============================================================================
+#  EJERCICIO — Lab 2 (Clase 3): completar la orquestación con docker compose
+# ============================================================================
+#
+#  La aplicación ya está migrada a PostgreSQL. El servicio `db` está COMPLETO,
+#  como ejemplo de referencia. Tu tarea es completar los TODO de `flyway`,
+#  `api` y `frontend` para que un solo comando levante toda la plataforma:
+#
+#      docker compose up --build
+#      # luego abre http://localhost:3000
+#
+#  Pistas sobre depends_on (controla el orden de arranque):
+#       condition: service_healthy                -> espera al healthcheck OK
+#       condition: service_completed_successfully -> espera a que el servicio termine
+# ============================================================================
+
+services:
+  # --- db: COMPLETO (úsalo como ejemplo) ------------------------------------
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: incidents
+      POSTGRES_PASSWORD: dev
+    volumes:
+      - pgdata:/var/lib/postgresql/data      # volumen nombrado (persistencia)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # --- flyway: aplica las migraciones de db/migrations ----------------------
+  flyway:
+    image: flyway/flyway
+    # TODO 1: command para migrar
+    #         -url=jdbc:postgresql://db/incidents -user=postgres -password=dev migrate
+    # TODO 2: monta ./db/migrations en /flyway/sql
+    # TODO 3: depends_on db con condition: service_healthy
+    #         (mira el healthcheck del servicio db, arriba)
+
+  # --- api: backend Flask ---------------------------------------------------
+  api:
+    build: .
+    # TODO 4: environment DATABASE_URL apuntando a la db por su NOMBRE de servicio
+    #         (no "localhost"); la base es "incidents", user postgres, password dev
+    # TODO 5: depends_on flyway con condition: service_completed_successfully
+
+  # --- frontend: Nginx sirve los estáticos y proxea /api/ -------------------
+  frontend:
+    image: nginx:alpine
+    ports: ["3000:80"]
+    # TODO 6: monta ./static y ./nginx.conf (solo lectura) en las rutas de nginx
+    #         (revisa la imagen nginx: dónde van los html y el conf)
+    # TODO 7: depends_on api
+
+volumes:
+  pgdata:
